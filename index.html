@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神兽命格测试：天命卷轴</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap');
+        
+        /* 魔兽史诗主题背景 */
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #0d1117; 
+            background-image: radial-gradient(at 0% 0%, #1e3a8a 0%, transparent 50%),
+                              radial-gradient(at 100% 0%, #4a044e 0%, transparent 50%);
+            color: #d1d5db; /* 浅灰色文字 */
+            min-height: 100vh;
+        }
+
+        /* 标题字体 */
+        .cinzel {
+            font-family: 'Cinzel', serif;
+        }
+        
+        /* 青铜金强调色 */
+        .text-bronze { color: #E6B34A; }
+        .bg-bronze { background-color: #E6B34A; }
+        .border-bronze { border-color: #E6B34A; }
+
+        /* 主要内容卡片 */
+        .card-glowing {
+            background-color: #1a1f26; 
+            border: 2px solid #364052;
+            box-shadow: 0 0 15px rgba(230, 179, 74, 0.2);
+        }
+
+        /* 按钮风格 */
+        .btn-epic {
+            background-color: #364052;
+            color: #E6B34A;
+            border: 1px solid #E6B34A;
+            transition: all 0.2s;
+        }
+        .btn-epic:hover {
+            background-color: #4b5563;
+            box-shadow: 0 0 10px rgba(230, 179, 74, 0.6);
+        }
+
+        /* 选项按钮 */
+        .btn-option {
+            background-color: #1a1f26;
+            border: 1px solid #364052;
+            color: #d1d5db;
+        }
+        .btn-option:hover {
+            background-color: #2c333f;
+        }
+
+        /* 选中的答案 */
+        .btn-selected {
+            background-color: #E6B34A !important;
+            color: #1a1f26 !important;
+            border-color: #fff !important;
+            box-shadow: 0 0 15px rgba(230, 179, 74, 0.8);
+        }
+
+        /* --- 神兽定位与融合样式 (首页装饰) --- */
+        .mythical-guardian {
+            position: fixed; /* 固定在视口 */
+            width: 300px;
+            height: 300px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.15; /* 关键：半透明，融入背景 */
+            z-index: -1; /* 确保在所有内容之下 */
+            transition: opacity 0.5s;
+            filter: drop-shadow(0 0 10px rgba(230, 179, 74, 0.5));
+        }
+
+        /* 青龙 - 左上角 (东方/生机) */
+        #guardian-azure {
+            top: -50px;
+            left: -50px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M20,50 Q40,30 60,50 Q80,70 80,50" stroke="%23E6B34A" fill="none" stroke-width="2"/></svg>');
+            filter: saturate(1.5) hue-rotate(200deg); 
+            transform: rotateY(180deg);
+        }
+
+        /* 朱雀 - 右上角 (南方/火焰) */
+        #guardian-vermilion {
+            top: -50px;
+            right: -50px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50,20 Q70,40 50,60 Q30,80 50,60" stroke="%23E6B34A" fill="none" stroke-width="2"/></svg>');
+            filter: saturate(1.5) hue-rotate(-20deg); 
+        }
+
+        /* 白虎 - 左下角 (西方/威慑) */
+        #guardian-white {
+            bottom: -50px;
+            left: -50px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,70 Q50,50 70,70" stroke="%23E6B34A" fill="none" stroke-width="2"/></svg>');
+            filter: grayscale(0.5); 
+            transform: rotateY(180deg);
+        }
+
+        /* 玄武 - 右下角 (北方/防御) */
+        #guardian-black {
+            bottom: -50px;
+            right: -50px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" stroke="%23E6B34A" fill="none" stroke-width="2"/></svg>');
+            filter: brightness(0.8); 
+        }
+
+        /* 雷达图容器样式 */
+        .radar-container {
+            width: 100%;
+            max-width: 450px; 
+            margin: 0 auto;
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .mythical-guardian {
+                width: 150px;
+                height: 150px;
+                opacity: 0.08;
+            }
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+    <!-- 神兽图片占位符 (首页装饰) -->
+    <div id="guardian-azure" class="mythical-guardian hidden md:block"></div>
+    <div id="guardian-vermilion" class="mythical-guardian hidden md:block"></div>
+    <div id="guardian-white" class="mythical-guardian hidden md:block"></div>
+    <div id="guardian-black" class="mythical-guardian hidden md:block"></div>
+
+    <div id="app" class="min-h-screen flex items-center justify-center p-4">
+        <!-- 内容由 JavaScript 渲染 -->
+    </div>
+
+    <script>
+        // --- 项目配置与数据 ---
+
+        // 注意: 此 URL 在部署到 Koyeb 后必须更新
+        const API_BASE_URL = 'https://your-koyeb-app.koyeb.app/api'; 
+        
+        // 12 核心命格代号
+        const MANDATES = {
+            '💚': { name: '青龙', theme: '创世引领者' },
+            '🔥': { name: '凤凰', theme: '高贵不朽者' },
+            '🦅': { name: '鲲鹏', theme: '宏图超越者' },
+            '🤍': { name: '白虎', theme: '秩序决断者' },
+            '🖤': { name: '玄武', theme: '沉稳防御者' },
+            '💡': { name: '白泽', theme: '真理洞察者' },
+            '🐦': { name: '精卫', theme: '永恒执念者' },
+            '😈': { name: '饕餮', theme: '欲望攫取者' },
+            '👹': { name: '穷奇', theme: '混乱颠覆者' },
+            '🛡️': { name: '犰狳', theme: '怯懦防御者' },
+            '🐍': { name: '相柳', theme: '多重毁灭者' },
+            '✖️': { name: '虚耗', theme: '消极损耗者' }
+        };
+
+        // 命格图片路径映射 (使用SVG占位符替代图片文件)
+        const MANDATE_IMAGES = {
+            '💚': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M20,50 Q40,30 60,50 Q80,70 80,50" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'qinglong' },
+            '🔥': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M50,20 Q70,40 50,60 Q30,80 50,60" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'fenghuang' },
+            '🦅': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,30 L70,70 M70,30 L30,70" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'kunpeng' },
+            '🤍': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,70 Q50,50 70,70" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'baihu' },
+            '🖤': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'xuanwu' },
+            '💡': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="40" r="15" stroke="%23E6B34A" fill="none" stroke-width="3"/><path d="M50,55 L50,70" stroke="%23E6B34A" stroke-width="3"/></svg>', pinyin: 'baize' },
+            '🐦': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,50 Q50,30 70,50" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'jingwei' },
+            '😈': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M40,40 L60,60 M60,40 L40,60" stroke="%23E6B34A" fill="none" stroke-width="3"/><circle cx="50" cy="50" r="25" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'taotie' },
+            '👹': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,30 L70,70 M70,30 L30,70 M50,20 L50,80" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'qiongqi' },
+            '🛡️': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="30" y="30" width="40" height="40" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'quyu' },
+            '🐍': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,50 Q40,30 50,50 Q60,70 70,50" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'xiangliu' },
+            '✖️': { path: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M30,30 L70,70 M70,30 L30,70" stroke="%23E6B34A" fill="none" stroke-width="3"/></svg>', pinyin: 'xuhao' }
+        };
+
+        // 5 大分析维度 (每个维度 12 题)
+        const DIMENSIONS = [
+            '天命罗盘 (Q1-Q12)',
+            '神能释出 (Q13-Q24)',
+            '心海秘境 (Q25-Q36)',
+            '洪荒交锋 (Q37-Q48)',
+            '尘世印记 (Q49-Q60)'
+        ];
+
+         // 60 题题库 (包含神兽代号)
+        const QUESTIONS = [
+            // Q1-Q12: 天命罗盘 (Goal & Motivation)
+            { q: "你的终极追求是？", options: [{ t: "创造与引领，让世界因你而充满生机。", c: '💚' }, { t: "超越边界，获得绝对的自由和广阔格局。", c: '🦅' }, { t: "拥有和享受，最大化物质和精神满足。", c: '😈' }, { t: "完成使命，让自己的行动成为永恒的誓言。", c: '🐦' }, { t: "经历蜕变，成就高贵且不朽的传奇。", c: '🔥' }] },
+            { q: "你认为智慧的最高价值在于？", options: [{ t: "洞察真理，通晓世间万物运行规律。", c: '💡' }, { t: "利用规则，看穿漏洞并颠覆陈旧秩序。", c: '👹' }, { t: "快速决断，在危急时刻做出准确行动。", c: '🤍' }, { t: "自我保护，提供坚实的心智防御和稳定。", c: '🖤' }, { t: "发现事物的致命弱点，并完成精准破坏。", c: '🐍' }] },
+            { q: "面对一个未知的巨大挑战，你会？", options: [{ t: "感到精疲力尽，希望这个挑战快点结束。", c: '✖️' }, { t: "立刻退避，寻找一个安全的角落以策万全。", c: '🛡️' }, { t: "将其视为涅槃的开端，相信重生必将更辉煌。", c: '🔥' }, { t: "开始设计新的工具和方法来解决。", c: '💚' }, { t: "寻找能将挑战转化为格局突破的视角。", c: '🦅' }] },
+            { q: "你更看重以下哪一种“力量”？", options: [{ t: "坚不可摧的忍耐力。", c: '🖤' }, { t: "瞬间摧毁一切的剧毒破坏力。", c: '🐍' }, { t: "对利益的绝对吸引和占有力。", c: '😈' }, { t: "永不停止、磨损一切的意志力。", c: '🐦' }, { t: "果断且迅速的行动力。", c: '🤍' }] },
+            { q: "你更渴望被他人视为？", options: [{ t: "可靠且睿智的顾问。", c: '💡' }, { t: "果断且高效的执行者。", c: '🤍' }, { t: "生活中的享受家/成功者。", c: '😈' }, { t: "充满活力的创新者。", c: '💚' }, { t: "不可预测的颠覆者。", c: '👹' }] },
+            { q: "你最容易被哪种事物吸引？", options: [{ t: "充满矛盾、反差和混乱的事物。", c: '👹' }, { t: "需要耐心和时间去雕琢的手工艺品。", c: '🐦' }, { t: "拥有强大力量、足以毁灭一切的存在。", c: '🐍' }, { t: "充满新意、能激发好奇心的发明。", c: '💚' }, { t: "精致、奢华、能带来高享受的体验。", c: '😈' }] },
+            { q: "你认为最完美的创造物是？", options: [{ t: "能带来巨大享受和满足感的东西。", c: '😈' }, { t: "一个能在毁灭中不断重塑、永恒高贵的结构。", c: '🔥' }, { t: "一个能提供绝对安全和稳定环境的屏障。", c: '🛡️' }, { t: "一个简单、能自动运行，不需要精力维护的结构。", c: '✖️' }, { t: "一个逻辑完美、能解释万物运行规律的体系。", c: '💡' }] },
+            { q: "你更喜欢哪种类型的学习？", options: [{ t: "系统地学习一切已知知识和规律。", c: '💡' }, { t: "打破现有框架，向高维度探索。", c: '🦅' }, { t: "通过实践和尝试，创造新的可能性。", c: '💚' }, { t: "学习高效的技能和战术，以应对挑战。", c: '🤍' }, { t: "专注于找到核心的缺陷并一击致命。", c: '🐍' }] },
+            { q: "你如何看待“竞争”？", options: [{ t: "是展示力量和效率，取得主导地位的途径。", c: '🤍' }, { t: "是考验自身韧性，实现自我超越的熔炉。", c: '🔥' }, { t: "是漫长旅途中不可避免的挑战，需要长期面对。", c: '🐦' }, { t: "是风险，如果可以，尽量保持安全距离。", c: '🖤' }, { t: "是利用混乱，打破现有权力结构的机会。", c: '👹' }] },
+            { q: "你最无法忍受哪一种人？", options: [{ t: "虚伪、试图假装高尚的人。", c: '👹' }, { t: "浪费资源、不知道及时行乐的人。", c: '😈' }, { t: "优柔寡断、迟迟无法做决定的人。", c: '🤍' }, { t: "固执己见、拒绝学习新知识的人。", c: '💡' }, { t: "抱怨、消极，持续散发负能量的人。", c: '✖️' }] },
+            { q: "你认为最不道德的行为是？", options: [{ t: "背信弃义、颠倒黑白。", c: '👹' }, { t: "无知、拒绝学习和探索真理。", c: '💡' }, { t: "违背自己许下的承诺。", c: '🐦' }, { t: "扼杀生机和创造力。", c: '💚' }, { t: "用最恶毒的手段造成无法挽回的毁灭。", c: '🐍' }] },
+            { q: "你更想在历史上留下哪种印记？", options: [{ t: "不灭的希望和自我救赎的传奇。", c: '🔥' }, { t: "一个彻底颠覆时代的混乱节点。", c: '👹' }, { t: "永恒的誓言和不朽的信念。", c: '🐦' }, { t: "稳定和长久的秩序与传承。", c: '🖤' }, { t: "一场清除所有不完美事物的净化之灾。", c: '🐍' }] },
+
+            // Q13-Q24: 神能释出 (Style & Execution)
+            { q: "你的工作节奏更像？", options: [{ t: "细水长流，持续不懈，每天都有微小的进展。", c: '🐦' }, { t: "快刀斩乱麻，一旦启动就用最快速度完成。", c: '🤍' }, { t: "周期性的爆发，在沉寂后迎来一次高效的输出。", c: '🔥' }, { t: "先深度分析，理清脉络后，再进行合理分配。", c: '💡' }, { t: "严谨慢热，必须确保所有环节都稳定安全。", c: '🖤' }] },
+            { q: "当你制定计划时，你最关注的是？", options: [{ t: "资源的整合和长期的发展潜力。", c: '💚' }, { t: "风险的评估和最坏情况的防御措施。", c: '🖤' }, { t: "突破性的创新和宏观的市场空间。", c: '🦅' }, { t: "投入产出比，能否最大化我的利益。", c: '😈' }, { t: "如何确保在计划失败后，我能够全身而退。", c: '🛡️' }] },
+            { q: "当情况变得一团糟时，你会？", options: [{ t: "迅速评估现场，找出可以利用的元素进行重建。", c: '💚' }, { t: "退后一步，理清所有的混沌和无序。", c: '💡' }, { t: "意识到这是超越旧体系的最佳时机。", c: '🦅' }, { t: "专注于保护和搜刮所有对自己有用的部分。", c: '😈' }, { t: "激发更多的矛盾，加速旧体系的全面崩塌。", c: '🐍' }] },
+            { q: "你的时间管理倾向于？", options: [{ t: "灵活，以重要事件为核心，允许时间流逝。", c: '🔥' }, { t: "严谨，确保所有环节都按部就班，保持稳定。", c: '🖤' }, { t: "固执，对设定的时间表有强大的执念。", c: '🐦' }, { t: "弹性，只关注大目标，细节时间可以调整。", c: '🦅' }, { t: "拖延，觉得每一步都在耗费精力，充满疲惫。", c: '✖️' }] },
+            { q: "在你看来，什么导致了失败？", options: [{ t: "没有及时满足自身的欲望或获取足够资源。", c: '😈' }, { t: "犹豫不决，没有果断地采取行动。", c: '🤍' }, { t: "过于遵守规则，错失了利用漏洞的机会。", c: '👹' }, { t: "缺乏有效的创新和前瞻性的规划。", c: '💚' }, { t: "冒险、以及过度暴露自身弱点。", c: '🛡️' }] },
+            { q: "当有人试图阻止你时，你会？", options: [{ t: "无视阻力，以更强大的毅力继续前进。", c: '🐦' }, { t: "直接绕开，因为你的目标在更高的维度。", c: '🦅' }, { t: "因为害怕失败或风险，会心生退意并开始动摇。", c: '🛡️' }, { t: "感到沮丧，可能会放弃并抱怨。", c: '✖️' }, { t: "用毁灭性的手段，让对手彻底失去阻止的能力。", c: '🐍' }] },
+            { q: "你的能量来源更像以下哪种自然现象？", options: [{ t: "春日降水：滋润万物，带来生机。", c: '💚' }, { t: "风起云涌：席卷一切，带来巨大尺度的变化。", c: '🦅' }, { t: "潮汐涨落：永恒而持续，充满恒定的力量。", c: '🐦' }, { t: "深海静谧：深沉而稳定，拥有巨大的承受力。", c: '🖤' }, { t: "火山爆发：在长久压抑后，释放出毁灭性的能量。", c: '🔥' }] },
+            { q: "如果你是裁判，你更关注？", options: [{ t: "公平的规则是否被理解和执行。", c: '💡' }, { t: "结果是否迅速、有效地产生。", c: '🤍' }, { t: "是否有人试图利用裁判的权力漏洞。", c: '👹' }, { t: "如何在裁决中看到未来发展的潜力。", c: '💚' }, { t: "裁决过程是否耗费了过多的时间和精力。", c: '✖️' }] },
+            { q: "你最欣赏哪种类型的成功？", options: [{ t: "从谷底反弹，完成惊天逆袭的成功。", c: '🔥' }, { t: "从无到有，开创一个全新领域的成功。", c: '💚' }, { t: "历经千年，依然稳固不倒的成功。", c: '🖤' }, { t: "积累了巨大的财富和享乐的成功。", c: '😈' }, { t: "打破所有束缚，活出极致自由的成功。", c: '🦅' }] },
+            { q: "你认为最强大的武器是？", options: [{ t: "洞察人心的真相。", c: '💡' }, { t: "果断且迅速的行动。", c: '🤍' }, { t: "引起混乱、颠倒黑白的言论。", c: '👹' }, { t: "永不停止、磨损一切的意志。", c: '🐦' }, { t: "不主动出击，让对手找不到目标的避战力。", c: '🛡️' }] },
+            { q: "当你获得巨大的权力时，你会？", options: [{ t: "用它来满足自己所有的欲望。", c: '😈' }, { t: "用它来改变或摧毁现有的体系。", c: '👹' }, { t: "用它来创造一个更美好的未来。", c: '💚' }, { t: "用它来确保长久的稳定和安全。", c: '🖤' }, { t: "用它来清除所有你不喜欢、认为有缺陷的事物。", c: '🐍' }] },
+
+            // Q25-Q36: 心海秘境 (Inner State & Emotion)
+            { q: "你的情感表达倾向于？", options: [{ t: "积极外向，充满生机与热情。", c: '💚' }, { t: "内敛防御，很少对外展露真实想法。", c: '🖤' }, { t: "直接表达欲望，以满足为目的。", c: '😈' }, { t: "克制，只在需要做出决定时才流露。", c: '🤍' }, { t: "消极低落，表达时常带有疲惫感。", c: '✖️' }] },
+            { q: "你的内心更像哪种空间？", options: [{ t: "一座图书馆，系统地整理着万物信息。", c: '💡' }, { t: "一片广阔的天空，充满变化与自由。", c: '🦅' }, { t: "一个地牢，储存着不服从的叛逆思想。", c: '👹' }, { t: "一个熔炉，周期性地进行着痛苦的淬炼。", c: '🔥' }, { t: "一座堡垒，大门紧闭，防御森严。", c: '🛡️' }] },
+            { q: "你的“执念”主要围绕？", options: [{ t: "对某个目标或承诺的永不放弃。", c: '🐦' }, { t: "对某种享受或资源的持续占有。", c: '😈' }, { t: "对生命和未来的无限可能性的追求。", c: '💚' }, { t: "对效率和控制的绝对要求。", c: '🤍' }, { t: "对破坏和清除不完美事物的渴望。", c: '🐍' }] },
+            { q: "你如何定义“安全感”？", options: [{ t: "拥有强大的防御和预知能力。", c: '🖤' }, { t: "拥有足够的知识和洞察力来应对未知。", c: '💡' }, { t: "知道自己随时可以离开并飞向更远方。", c: '🦅' }, { t: "相信自己能从任何危机中重生。", c: '🔥' }, { t: "没有任何需要努力或付出精力的负担。", c: '✖️' }] },
+            { q: "你感到最平静的时刻是？", options: [{ t: "所有计划都顺利进行，没有风险。", c: '🖤' }, { t: "理清了一个困扰已久的复杂难题。", c: '💡' }, { t: "完成了重要的任务，等待下一个行动。", c: '🤍' }, { t: "经历了痛苦，正在缓慢恢复和蜕变。", c: '🔥' }, { t: "沉浸在极度的物质享受中。", c: '😈' }] },
+            { q: "你如何处理一个失败的项目？", options: [{ t: "迅速切断，从高处寻找下一个超越的机会。", c: '🦅' }, { t: "坚持复盘，从中找到微小的教训，永不放弃。", c: '🐦' }, { t: "感到沮丧，可能长期处于消极和拖延状态。", c: '✖️' }, { t: "如果无法修复，我会确保它被彻底毁灭。", c: '🐍' }, { t: "立即关闭所有信息渠道，避免进一步的风险。", c: '🛡️' }] },
+            { q: "你的“消极”情绪源自？", options: [{ t: "感到一切努力都是徒劳，心力被耗尽。", c: '✖️' }, { t: "感到环境充满风险，无法安心。", c: '🛡️' }, { t: "对事物的不完美感到厌恶，并想摧毁。", c: '🐍' }, { t: "对现有秩序和一切权威的厌倦。", c: '👹' }, { t: "缺乏足够的刺激和享受。", c: '😈' }] },
+            { q: "你认为最具浪漫色彩的是？", options: [{ t: "在绝境中浴火重生的壮烈。", c: '🔥' }, { t: "挣脱一切束缚，自由翱翔的辽阔。", c: '🦅' }, { t: "从无到有，创造出一个世界的生机。", c: '💚' }, { t: "看穿万物，在混沌中找到永恒的秩序。", c: '💡' }, { t: "为了一句誓言，付出亿万年的坚持。", c: '🐦' }] },
+            { q: "你的“耐心”主要取决于？", options: [{ t: "对最终目标的执着程度。", c: '🐦' }, { t: "对风险的评估和防范需求。", c: '🖤' }, { t: "对效率的容忍底线。", c: '🤍' }, { t: "对过程中的乐趣或享受程度。", c: '😈' }, { t: "目标是否能引发足够的反叛和刺激。", c: '👹' }] },
+            { q: "你的“恶”源于？", options: [{ t: "对欲望无止境的追求和占有。", c: '😈' }, { t: "对现有秩序的厌恶和颠覆的渴望。", c: '👹' }, { t: "对低效和不公正的零容忍。", c: '🤍' }, { t: "对不完美和缺陷的极端厌恶。", c: '🐍' }, { t: "长期压抑和损耗导致的心力枯竭。", c: '✖️' }] },
+            { q: "你如何平衡工作与休息？", options: [{ t: "休息就是最大化的享受。", c: '😈' }, { t: "休息是为下一次创造积蓄生机。", c: '💚' }, { t: "休息是为下一次重生蓄能。", c: '🔥' }, { t: "休息是为了确保系统的稳定运行。", c: '🖤' }, { t: "休息只是为了积累能量，进行下一次的破坏。", c: '🐍' }] },
+            { q: "你如何定义成功？", options: [{ t: "达成既定的宏大目标，实现自我超越。", c: '🦅' }, { t: "通过不懈的努力，完成自己的使命或誓言。", c: '🐦' }, { t: "获得巨大的财富和物质上的丰裕。", c: '😈' }, { t: "在经历失败后，依然能站起来并变得更强。", c: '🔥' }, { t: "长久地保持稳定和安全，避免重大风险。", c: '🖤' }] },
+
+            // Q37-Q48: 洪荒交锋 (Conflict & Alignment)
+            { q: "你更倾向于哪种生活方式？", options: [{ t: "不断尝试新事物，创造和探索。", c: '💚' }, { t: "稳定地重复，将风险降到最低。", c: '🖤' }, { t: "不断移动，拒绝被任何地方束缚。", c: '🦅' }, { t: "及时行乐，享受当下。", c: '😈' }, { t: "避世而居，避免卷入任何冲突。", c: '🛡️' }] },
+            { q: "你如何看待“仁慈”？", options: [{ t: "仁慈源于对众生运行规律的理解。", c: '💡' }, { t: "仁慈需要用长久的行动去实践。", c: '🐦' }, { t: "仁慈是软弱和虚伪的表现。", c: '👹' }, { t: "仁慈的前提是维护核心秩序。", c: '🤍' }, { t: "仁慈是无意义的，因为它最终会被损耗殆尽。", c: '✖️' }] },
+            { q: "你如何平衡对立与矛盾？", options: [{ t: "拥抱矛盾，利用其带来的混乱。", c: '👹' }, { t: "分析矛盾的根源，寻求逻辑上的统一。", c: '💡' }, { t: "压制矛盾，确保表面上的和平与稳定。", c: '🖤' }, { t: "快速决策，以强硬手段解决主要矛盾。", c: '🤍' }, { t: "在对立中寻找新的融合点和发展潜力。", c: '💚' }] },
+            { q: "当你卷入争执时，你的首要目标是？", options: [{ t: "快速终结冲突，恢复秩序。", c: '🤍' }, { t: "分析争执的根本原因，寻找最理性的解决方案。", c: '💡' }, { t: "确保争执带来的混乱能揭露一些真相。", c: '👹' }, { t: "确保自己在这场冲突中没有遭受损失，最好有所获。", c: '😈' }, { t: "立刻脱身，避免冲突升级到无法控制的程度。", c: '🛡️' }] },
+            { q: "你的“威慑力”的理解是？", options: [{ t: "快速而准确的打击能力。", c: '🤍' }, { t: "深不可测的底线和隐藏的实力。", c: '🖤' }, { t: "剧毒且多头绪的、不可逆转的破坏。", c: '🐍' }, { t: "绝不参与冲突，让对手无从下手。", c: '🛡️' }, { t: "消极抵抗，让对手感到巨大的精力损耗。", c: '✖️' }] },
+            { q: "你如何看待时间？", options: [{ t: "时间是检验一切的唯一标准，需要耐心。", c: '🐦' }, { t: "时间是相对的，关键在于你飞翔的维度。", c: '🦅' }, { t: "时间是流动的，但其内在规律恒定不变。", c: '💡' }, { t: "时间是有限的，必须用来最大化享受。", c: '😈' }, { t: "时间是缓慢的消耗，让人感到疲惫。", c: '✖️' }] },
+            { q: "你更相信以下哪种力量？", options: [{ t: "自我的蜕变和重塑。", c: '🔥' }, { t: "世界的革新和发展。", c: '💚' }, { t: "永恒的稳定和防御。", c: '🖤' }, { t: "体系的混乱和解构。", c: '👹' }, { t: "毁灭后的彻底净化。", c: '🐍' }] },
+            { q: "你更倾向于用什么来影响他人？", options: [{ t: "你的热情和创造力。", c: '💚' }, { t: "你能提供的利益和享受。", c: '😈' }, { t: "你的稳定和可靠性。", c: '🖤' }, { t: "你的独特魅力和传奇经历。", c: '🔥' }, { t: "你的洞察力，让他们意识到真相。", c: '💡' }] },
+
+            // Q49-Q60: 尘世印记 (Self & Legacy)
+            { q: "你希望你的遗产是什么？", options: [{ t: "长久的稳定和秩序。", c: '🖤' }, { t: "全新的方法和开始。", c: '💚' }, { t: "对旧有权威的挑战和颠覆。", c: '👹' }, { t: "令人印象深刻的财富和享受。", c: '😈' }, { t: "对一个时代的彻底终结和清除。", c: '🐍' }] },
+            { q: "你更看重", options: [{ t: "事实的真相。", c: '💡' }, { t: "行动的效率。", c: '🤍' }, { t: "个人的利益。", c: '😈' }, { t: "生命的韧性。", c: '🔥' }, { t: "诺言的兑现。", c: '🐦' }] },
+            { q: "当你获得巨大的权力时，你会？", options: [{ t: "用它来满足自己所有的欲望。", c: '😈' }, { t: "用它来改变或摧毁现有的体系。", c: '👹' }, { t: "用它来创造一个更美好的未来。", c: '💚' }, { t: "用它来确保长久的稳定和安全。", c: '🖤' }, { t: "用它来让自己彻底远离风险和冲突。", c: '🛡️' }] },
+            { q: "你更欣赏哪种人？", options: [{ t: "历经磨难，却依然保持高贵和希望的人。", c: '🔥' }, { t: "精力充沛，充满新想法和行动力的人。", c: '💚' }, { t: "深谋远虑，能看到长远风险的人。", c: '🖤' }, { t: "不被世俗所困，活出大格局的人。", c: '🦅' }, { t: "理性至上，能看穿事物本质的人。", c: '💡' }] },
+            { q: "你如何看待一个失败的项目？", options: [{ t: "迅速切断，从高处寻找下一个超越的机会。", c: '🦅' }, { t: "坚持复盘，从中找到微小的教训，永不放弃。", c: '🐦' }, { t: "感到沮丧，可能长期处于消极和拖延状态。", c: '✖️' }, { t: "如果无法修复，我会确保它被彻底毁灭。", c: '🐍' }, { t: "立即关闭所有信息渠道，避免进一步的风险。", c: '🛡️' }] },
+            { q: "你认为最具浪漫色彩的是？", options: [{ t: "在绝境中浴火重生的壮烈。", c: '🔥' }, { t: "挣脱一切束缚，自由翱翔的辽阔。", c: '🦅' }, { t: "从无到有，创造出一个世界的生机。", c: '💚' }, { t: "看穿万物，在混沌中找到永恒的秩序。", c: '💡' }, { t: "以一己之力，颠覆整个时代的秩序。", c: '👹' }] },
+            { q: "当你面对巨大损失时，你的反应是？", options: [{ t: "将其视为涅槃的开端，相信重生必将更加辉煌。", c: '🔥' }, { t: "将痛苦转化为动力，用更深的执着去弥补。", c: '🐦' }, { t: "感到巨大的空虚，急切寻找新的享受来填补。", c: '😈' }, { t: "感到兴奋，因为旧的崩塌意味着新的开始。", c: '👹' }, { t: "感到心力交瘁，失去继续前进的动力。", c: '✖️' }] },
+            { q: "你最无法忍受的浪费是？", options: [{ t: "浪费创造的机会和生机。", c: '💚' }, { t: "浪费学习和洞察真相的机会。", c: '💡' }, { t: "浪费投入的时间和毅力。", c: '🐦' }, { t: "浪费重塑自我和实现高贵的机会。", c: '🔥' }, { t: "浪费享受和获取财富的机会。", c: '😈' }] },
+            { q: "你的生活哲学更贴近？", options: [{ t: "人生苦短，及时行乐，获取至上。", c: '😈' }, { t: "锲而不舍，滴水穿石，信念至上。", c: '🐦' }, { t: "生机勃勃，不断创造，潜力至上。", c: '💚' }, { t: "洞察真理，明辨是非，认知至上。", c: '💡' }, { t: "安全至上，避开风险，稳定为王。", c: '🛡️' }] },
+            { q: "当所有人都相信一件事时，你的第一反应是？", options: [{ t: "怀疑并试图找到反面证据。", c: '👹' }, { t: "审慎评估，等待时间检验。", c: '🖤' }, { t: "如果能带来效率，就暂且接受。", c: '🤍' }, { t: "如果事态有变，我有能力重塑信念。", c: '🔥' }, { t: "观察其中是否有漏洞可以利用来制造混乱。", c: '🐍' }] },
+            { q: "如果你必须作出牺牲，你会牺牲？", options: [{ t: "局部的限制，以换取整体的自由。", c: '🦅' }, { t: "无用的情感和顾虑，以完成破坏。", c: '🐍' }, { t: "主动权，以换取绝对的安全。", c: '🛡️' }, { t: "精力和热情，以应付不得不完成的任务。", c: '✖️' }, { t: "微小的利益，以换取更大的享受。", c: '😈' }] },
+            { q: "你认为最能体现“尊贵”的是？", options: [{ t: "引领万物，开创新纪元的帝王气概。", c: '💚' }, { t: "历经毁灭，依旧不改其高洁和典雅。", c: '🔥' }, { t: "挣脱一切束缚，达到无人企及的境界。", c: '🦅' }, { t: "拥有无尽的财富和极致的享乐。", c: '😈' }, { t: "超越凡尘，洞察一切的智慧与超然。", c: '💡' }] },
+            { q: "对于“前途无量”，你更认同哪种描述？", options: [{ t: "没有边界，随时可以飞向新的维度。", c: '🦅' }, { t: "充满生机，有无限的潜力去创造和引领。", c: '💚' }, { t: "高效执行，能迅速清除所有阻碍前进的障碍。", c: '🤍' }, { t: "安全稳固，没有后顾之忧地向前迈进。", c: '🛡️' }, { t: "即使历经失败，也终将达到高贵的顶点。", c: '🔥' }] },
+            { q: "你更倾向于哪种“好运”？", options: [{ t: "能带来关键的知识和洞察力。", c: '💡' }, { t: "让我的长期努力得到回报。", c: '🐦' }, { t: "能带来巨大而直接的物质享受。", c: '😈' }, { t: "能让我的负担减轻或消失。", c: '✖️' }, { t: "能帮助我找到目标的致命弱点。", c: '🐍' }] },
+        ];
+
+
+        // --- 核心逻辑变量 ---
+        let currentStep = 0; // 0: 欢迎, 1: 知情同意, 2: 答题, 3: 结果
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let scoreCounter = {};
+        let accessCodeValid = false;
+        let chartInstance = null; // 用于存储 Chart.js 实例
+
+        // --- 核心函数：渲染逻辑 ---
+
+        // 主渲染函数，根据 currentStep 决定显示哪个页面
+        function render() {
+            const app = document.getElementById('app');
+            app.innerHTML = ''; // 清空内容
+
+            if (currentStep === 0) {
+                renderWelcome();
+            } else if (currentStep === 1) {
+                renderConsent();
+            } else if (currentStep === 2) {
+                renderQuestion();
+            } else if (currentStep === 3) {
+                renderLoading();
+                // 直接处理结果，不等待API
+                setTimeout(processResults, 1500);
+            }
+        }
+
+        // 渲染加载界面
+        function renderLoading() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="card-glowing p-8 rounded-lg shadow-xl text-center">
+                    <h1 class="cinzel text-3xl text-bronze mb-4">神谕降临</h1>
+                    <p class="text-gray-400 mb-6">正在解析你的命格轨迹，请稍候...</p>
+                    <div class="flex justify-center items-center">
+                        <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-bronze" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 渲染欢迎/访问码输入界面
+        function renderWelcome() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="w-full max-w-2xl card-glowing p-8 rounded-2xl shadow-2xl text-center">
+                    <h1 class="cinzel text-5xl text-bronze mb-4">天命卷轴：神兽命格测试</h1>
+                    <p class="text-lg text-gray-400 mb-6">在世界的混沌与秩序交锋中，你的灵魂被哪位上古神兽所铭刻？</p>
+                    
+                    <div class="border-t border-b border-bronze/50 py-4 mb-8">
+                        <p class="text-gray-300 italic">
+                            "一卷天命，十二神格，辨善恶，定始终。唯有通过密钥者，方得窥见真我。"
+                        </p>
+                    </div>
+
+                    <div class="mb-6">
+                        <input type="password" id="accessCode" placeholder="输入您的密钥 (测试期间可直接点击开始)" 
+                               class="w-full p-3 rounded-md bg-gray-800 text-white border border-bronze/50 focus:border-bronze focus:ring focus:ring-bronze/50" />
+                        <p id="authMessage" class="text-red-500 mt-2 text-sm hidden"></p>
+                    </div>
+                    
+                    <button onclick="handleAccessCode()" class="btn-epic px-8 py-3 rounded-md text-lg w-full">
+                        开启命格测试
+                    </button>
+                </div>
+            `;
+        }
+
+        // 处理访问密钥 - 简化版本，直接通过
+        function handleAccessCode() {
+            accessCodeValid = true;
+            currentStep = 1; // 跳转到知情同意书
+            render();
+        }
+
+        // 渲染知情同意书
+        function renderConsent() {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="w-full max-w-2xl card-glowing p-8 rounded-2xl shadow-2xl">
+                    <h1 class="cinzel text-4xl text-bronze mb-6 text-center">命格测试知情同意书</h1>
+                    
+                    <div class="h-64 overflow-y-auto p-4 rounded-lg bg-[#0d1117] border border-gray-700 text-sm text-gray-400">
+                        <p class="mb-4"><strong>卷轴开启声明：</strong></p>
+                        <p class="mb-4">本命格测试旨在通过对您性格倾向、行为模式和价值观的分析，映射出您与上古神兽命格的契合度。测试结果仅供娱乐和自我探索，不构成任何专业性建议或诊断。</p>
+                        
+                        <p class="mb-4"><strong>数据隐私承诺：</strong></p>
+                        <ul class="list-disc ml-6 mb-4">
+                            <li>您提交的答案和最终结果将被存储于安全数据库 (MongoDB)，用于匿名化统计分析。</li>
+                            <li>我们不会收集您的真实身份信息，您的结果将使用随机用户ID进行标记。</li>
+                            <li>您有权知晓您的命格轮廓，并了解其可能带来的挑战与优势。</li>
+                        </ul>
+                        
+                        <p class="mb-4"><strong>卷轴风险警示：</strong></p>
+                        <p class="mb-4">本卷轴包含凶兽命格（如饕餮、穷奇、相柳）。若测得凶兽命格，请将其视为对您内在潜在风险的警示，而非对您本人的定论。所有命格，皆有其正面天赋。</p>
+                    </div>
+                    
+                    <div class="flex items-center mt-6">
+                        <input type="checkbox" id="consentCheckbox" class="h-5 w-5 rounded text-bronze focus:ring-bronze" />
+                        <label for="consentCheckbox" class="ml-3 text-gray-300">我已阅读并理解以上声明，同意开启天命卷轴。</label>
+                    </div>
+
+                    <button id="startTestButton" onclick="startTest()" class="btn-epic px-8 py-3 rounded-md text-lg w-full mt-6" disabled>
+                        开始答题 (共 60 题)
+                    </button>
+                </div>
+            `;
+            // 监听复选框状态
+            document.getElementById('consentCheckbox').addEventListener('change', function() {
+                document.getElementById('startTestButton').disabled = !this.checked;
+            });
+        }
+
+        // 开始测试
+        function startTest() {
+            currentStep = 2;
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            // 初始化分数计数器
+            Object.keys(MANDATES).forEach(code => scoreCounter[code] = 0);
+            render();
+        }
+
+        // 渲染单个题目
+        function renderQuestion() {
+            if (currentQuestionIndex >= QUESTIONS.length) {
+                currentStep = 3; // 答题结束
+                render();
+                return;
+            }
+
+            const questionData = QUESTIONS[currentQuestionIndex];
+            const app = document.getElementById('app');
+
+            // 计算进度
+            const progress = ((currentQuestionIndex + 1) / QUESTIONS.length) * 100;
+
+            const questionHtml = `
+                <div class="w-full max-w-3xl card-glowing p-6 md:p-10 rounded-2xl shadow-2xl">
+                    <div class="mb-6">
+                        <div class="h-2 rounded-full bg-gray-700">
+                            <div class="h-full rounded-full bg-bronze transition-all duration-500" style="width: ${progress}%"></div>
+                        </div>
+                        <p class="text-sm text-gray-400 mt-2 text-right">第 ${currentQuestionIndex + 1} / ${QUESTIONS.length} 题</p>
+                    </div>
+
+                    <h2 class="text-2xl md:text-3xl text-white mb-8 text-center font-bold">${questionData.q}</h2>
+                    
+                    <div class="space-y-4" id="optionsContainer">
+                        ${questionData.options.map((option, index) => `
+                            <button data-code="${option.c}" data-index="${index}" onclick="selectAnswer(this)"
+                                class="btn-option w-full text-left p-3 md:p-4 rounded-lg transition-colors duration-200">
+                                <span class="font-bold text-bronze mr-2">${['A', 'B', 'C', 'D', 'E'][index]}.</span> ${option.t}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            app.innerHTML = questionHtml;
+        }
+
+        // 选择答案
+        function selectAnswer(button) {
+            const optionsContainer = document.getElementById('optionsContainer');
+            // 移除所有按钮的选中样式
+            optionsContainer.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('btn-selected');
+            });
+            
+            // 添加当前按钮的选中样式
+            button.classList.add('btn-selected');
+            
+            // 延迟 300ms 后自动跳转到下一题
+            setTimeout(goToNextQuestion, 300);
+        }
+
+        // 跳转到下一题
+        function goToNextQuestion() {
+            const selectedButton = document.querySelector('.btn-selected');
+            if (!selectedButton) {
+                return;
+            }
+
+            const code = selectedButton.getAttribute('data-code');
+            const index = parseInt(selectedButton.getAttribute('data-index'));
+
+            // 1. 记录答案
+            userAnswers.push({ 
+                qIndex: currentQuestionIndex, 
+                code: code, 
+                optionIndex: index 
+            });
+
+            // 2. 累加分数
+            scoreCounter[code]++;
+
+            // 3. 进入下一题
+            currentQuestionIndex++;
+            renderQuestion(); // 自动渲染下一题或进入结果页
+        }
+
+        // --- 核心函数：结果处理与计分 ---
+
+        // 1. 找到核心命格和辅佐命格
+        function findMandates() {
+            let sortedScores = Object.entries(scoreCounter).sort(([, a], [, b]) => b - a);
+
+            if (sortedScores.length === 0) {
+                // 极端情况：没有答题
+                return { core: { code: '✖️', score: 0, name: MANDATES['✖️'].name }, secondary: null };
+            }
+
+            let coreMandate = { code: sortedScores[0][0], score: sortedScores[0][1], name: MANDATES[sortedScores[0][0]].name };
+            let secondaryMandate = null;
+            
+            // 检查是否有平局（总分相同）
+            const topScore = coreMandate.score;
+            const topScorers = sortedScores.filter(item => item[1] === topScore);
+
+            if (topScorers.length > 1) {
+                // 执行平局裁决 - 简化版本，选择第一个
+                coreMandate = { code: topScorers[0][0], score: topScore, name: MANDATES[topScorers[0][0]].name };
+                
+                // 找到第二个最高分（排除获胜者）
+                const remainingScores = sortedScores.filter(item => item[0] !== coreMandate.code);
+                if (remainingScores.length > 0) {
+                    secondaryMandate = { code: remainingScores[0][0], score: remainingScores[0][1], name: MANDATES[remainingScores[0][0]].name };
+                }
+            } else {
+                // 没有平局，直接设置辅佐命格
+                if (sortedScores.length > 1) {
+                    secondaryMandate = { code: sortedScores[1][0], score: sortedScores[1][1], name: MANDATES[sortedScores[1][0]].name };
+                }
+            }
+
+            return { core: coreMandate, secondary: secondaryMandate };
+        }
+
+        // 2. 计算雷达图数据
+        function calculateRadarData(coreMandateCode) {
+            const radarScores = [0, 0, 0, 0, 0]; // 对应 5 个维度
+            
+            userAnswers.forEach((answer, index) => {
+                const qIndex = index + 1; // 题目索引 1 到 60
+                let dimIndex;
+
+                // 确定答案属于哪个维度
+                if (qIndex <= 12) dimIndex = 0;
+                else if (qIndex <= 24) dimIndex = 1;
+                else if (qIndex <= 36) dimIndex = 2;
+                else if (qIndex <= 48) dimIndex = 3;
+                else dimIndex = 4;
+                
+                // 如果用户在该题选择了核心命格的答案
+                if (answer.code === coreMandateCode) {
+                    radarScores[dimIndex]++;
+                }
+            });
+
+            // 标准化到 100% (每个维度最大原始分 12)
+            return radarScores.map(score => (score / 12) * 100);
+        }
+
+        // 3. 结果处理主流程
+        function processResults() {
+            const { core, secondary } = findMandates();
+            const radarData = calculateRadarData(core.code);
+
+            const finalResult = {
+                core: core,
+                secondary: secondary,
+                radarData: radarData,
+                answers: userAnswers
+            };
+            
+            console.log("处理结果完成:", finalResult);
+            renderResults(finalResult);
+        }
+
+        // 4. 渲染最终结果
+        function renderResults(result) {
+            const app = document.getElementById('app');
+            
+            // 安全检查
+            if (!result || !result.core) {
+                app.innerHTML = `
+                    <div class="card-glowing p-8 rounded-lg shadow-xl text-center">
+                        <h1 class="cinzel text-3xl text-bronze mb-4">错误</h1>
+                        <p class="text-gray-400 mb-6">无法解析您的命格，请重新测试。</p>
+                        <button onclick="currentStep=0; render()" class="btn-epic px-8 py-3 rounded-md text-lg">
+                            重新开启卷轴
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const { core, secondary } = result;
+            const coreContent = getMandateContent(core.code, secondary ? secondary.code : null);
+
+            // 命格图片路径
+            const coreImage = MANDATE_IMAGES[core.code] || MANDATE_IMAGES['✖️'];
+
+            const secondaryHtml = secondary ? `
+                <div class="mt-6 p-4 rounded-lg border border-bronze/50 bg-[#1a1f26]">
+                    <h3 class="cinzel text-xl text-bronze mb-2">辅佐命格解析</h3>
+                    <p class="text-gray-300">
+                        <span class="font-bold text-white">${secondary.name}</span> 
+                         (${secondary.code})：
+                        ${coreContent.secondaryDescription}
+                    </p>
+                </div>
+            ` : '';
+
+            app.innerHTML = `
+                <div class="w-full max-w-4xl card-glowing p-6 md:p-12 rounded-2xl shadow-2xl text-center">
+                    <h1 class="cinzel text-5xl md:text-6xl text-bronze mb-4">天命已定</h1>
+                    <p class="text-xl text-gray-400 mb-8">您的核心命格已由天命卷轴揭示。</p>
+
+                    <!-- 核心命格展示 -->
+                    <div class="mb-10 border-b border-bronze/50 pb-8">
+                        <h2 class="cinzel text-4xl text-white mb-4">【${core.name}】命格！</h2>
+                        <img src="${coreImage.path}" alt="${core.name}图腾" class="w-48 h-48 mx-auto mb-4 rounded-full border-4 border-bronze/70 object-cover">
+                        <p class="text-2xl text-bronze font-semibold">${coreContent.declaration}</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-10 text-left">
+                        <!-- 左侧：雷达图 -->
+                        <div>
+                            <h3 class="cinzel text-2xl text-bronze mb-4">五维神能轮廓</h3>
+                            <div class="radar-container bg-[#0d1117] p-4 rounded-lg">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+                            <p class="text-sm text-gray-400 mt-3">图表展示您的核心命格在五大维度上的强度。</p>
+                        </div>
+                        
+                        <!-- 右侧：文字解读 -->
+                        <div>
+                            <h3 class="cinzel text-2xl text-bronze mb-4">命格天赋与优势</h3>
+                            <div class="space-y-4 text-gray-300">
+                                <p><strong>核心天赋：</strong> ${coreContent.talent}</p>
+                                <p><strong>优势领域：</strong> ${coreContent.advantage}</p>
+                            </div>
+
+                            ${secondaryHtml}
+
+                            <div class="mt-8 border-t border-gray-700 pt-6">
+                                <h3 class="cinzel text-2xl text-red-400 mb-3">命格挑战与警示</h3>
+                                <p class="text-gray-300">${coreContent.challenge}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 寄语 -->
+                    <div class="mt-12 border-t border-bronze/50 pt-8">
+                        <h3 class="cinzel text-3xl text-bronze mb-4">神祇寄语</h3>
+                        <p class="text-xl italic text-white">${coreContent.epilogue}</p>
+                    </div>
+
+                    <button onclick="currentStep=0; render()" class="btn-epic px-8 py-3 rounded-md text-lg mt-8">
+                        重新开启卷轴
+                    </button>
+                </div>
+            `;
+            // 绘制雷达图
+            drawRadarChart(result.radarData);
+        }
+
+        // 5. 绘制雷达图
+        function drawRadarChart(data) {
+            const ctx = document.getElementById('radarChart');
+            if (!ctx) return;
+            
+            ctx.getContext('2d');
+            if (chartInstance) {
+                chartInstance.destroy(); // 销毁旧实例
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: DIMENSIONS.map(d => d.split('(')[0].trim()),
+                    datasets: [{
+                        label: '命格强度 (%)',
+                        data: data,
+                        backgroundColor: 'rgba(230, 179, 74, 0.4)',
+                        borderColor: '#E6B34A',
+                        pointBackgroundColor: '#E6B34A',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#E6B34A',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                            pointLabels: { 
+                                font: { size: 14, family: 'Noto Sans SC' },
+                                color: '#d1d5db' 
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            ticks: {
+                                display: false,
+                                stepSize: 20
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: ${context.parsed.r.toFixed(0)}%`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- 内容数据源：命格文案 ---
+        function getMandateContent(coreCode, secondaryCode) {
+            const content = {
+                declaration: "未知命格，混沌初开。",
+                talent: "无法解析，请重新测试。",
+                advantage: "无优势。",
+                challenge: "命格数据缺失。",
+                epilogue: "命运仍在书写中。",
+                secondaryDescription: "无辅佐命格信息。"
+            };
+
+            // --- 核心命格文案 (已修复 Markdown 符号) ---
+            switch (coreCode) {
+                case '💚': // 青龙
+                    content.declaration = "东方木神，生机盎然。";
+                    content.talent = "您是<strong>天生的创世引领者</strong>。不满足于现状，拥有革新精神，能整合资源并描绘出最宏大的未来蓝图。";
+                    content.advantage = "您的<strong>神能释出</strong>充满活力和感染力，行动模式前瞻而富有规划性，是团队中最具<strong>创造力与领袖力</strong>的人。";
+                    content.challenge = "警惕<strong>过于急躁</strong>和<strong>理想化</strong>。在追求革新时，可能因忽视细节而动摇根基。须学会沉淀力量。";
+                    content.epilogue = "“生生不息，道法自然。拥抱你磅礴的生机，以德行规划天地，勿失本心。”";
+                    break;
+                case '🐍': // 相柳
+                    content.declaration = "九头毒蛇，剧毒破败。";
+                    content.talent = "您是<strong>天生的清除者</strong>。您对事物的缺陷、腐朽和不完美有着极端的厌恶，并倾向于用多重、彻底的力量来清除它们。";
+                    content.advantage = "您的<strong>洪荒交锋</strong>具有致命精准，擅长找到目标的<strong>核心缺陷</strong>，并用高压手段加速其崩溃，适用于需要彻底切割和重置的场合。";
+                    content.challenge = "警惕<strong>过度破坏</strong>和<strong>失去控制</strong>。须控制您的破坏欲，避免‘为毁灭而毁灭’，否则将成为一切生机和希望的敌人。";
+                    content.epilogue = "“毒液虽烈，亦是药引。以破坏为手段，以净化为目的。莫让九头之毒，蒙蔽了你对重建的渴望。”";
+                    break;
+                case '😈': // 饕餮
+                    content.declaration = "上古凶兽，贪婪无度。";
+                    content.talent = "您是<strong>天生的欲望攫取者</strong>。您的驱动力是<strong>利益最大化</strong>和<strong>立即满足</strong>。擅长搜刮资源、发现享受的机会，并能为此付出极大的努力。";
+                    content.advantage = "您的<strong>天命罗盘</strong>目标极其清晰，决策围绕‘我能得到什么’展开，这使您在商业和资源竞争中，目标明确，<strong>效率极高</strong>。";
+                    content.challenge = "警惕<strong>贪婪无度</strong>和<strong>永不满足</strong>。须正视您的欲望，避免为了私欲而侵害他人，或被无止境的空虚感所吞噬。";
+                    content.epilogue = "“食欲无度，终将自缚。正视你的欲望，但要学会设定边界。真正的满足并非源于占有，而源于驾驭你的本能。”";
+                    break;
+                // --- 补充其他命格的核心文案 ---
+                case '🔥': // 凤凰
+                    content.declaration = "百鸟之王，不朽希望。";
+                    content.talent = "您是<strong>天生的精神领袖</strong>。不惧怕毁灭，相信终结只是下一次升华的序幕。拥有<strong>超凡的韧性</strong>。";
+                    content.advantage = "您的<strong>心海秘境</strong>极其强大，能在痛苦中淬炼自我。这赋予了您在常人无法承受的压力下，绽放光芒的能力。";
+                    content.challenge = "警惕<strong>过于孤高</strong>和<strong>理想化</strong>。高标准和对完美的追求，可能让您与世俗产生隔阂。";
+                    content.epilogue = "“浴火重生，高贵不朽。拥抱每一次的淬炼，你的终点在于永恒的荣耀。”";
+                    break;
+                case '🦅': // 鲲鹏
+                    content.declaration = "北冥巨兽，超脱自由。";
+                    content.talent = "您是<strong>天生的格局家</strong>。厌恶被束缚，具有非凡的远见和突破精神。能将局部的失败迅速转化为<strong>更宏大的机会</strong>。";
+                    content.advantage = "您的<strong>天命罗盘</strong>指向远方和高维。擅长迅速切断沉没成本，找到最广阔的出路，具有<strong>极大的潜力</strong>。";
+                    content.challenge = "警惕<strong>眼高手低</strong>和<strong>脱离实际</strong>。须确保有可靠的执行者来落地您的宏图，避免成为空想家。";
+                    content.epilogue = "“心有多远，便能飞多高。莫恋微末之光，当逐九天之自由。”";
+                    break;
+                case '🤍': // 白虎
+                    content.declaration = "西方煞神，果断裁决。";
+                    content.talent = "您是<strong>天生的裁决者</strong>。思维清晰，行动果断，对低效和不公正有极强的零容忍。是<strong>秩序的维护者</strong>。";
+                    content.advantage = "您的<strong>神能释出</strong>精准且高效。决策速度极快，且极少后悔。在混乱中能<strong>快刀斩乱麻</strong>，迅速恢复局面。";
+                    content.challenge = "警惕<strong>过于严苛</strong>和<strong>缺乏弹性</strong>。在追求效率时，可能因过于刚烈而缺乏人情和变通。";
+                    content.epilogue = "“行止果决，威慑四方。以正义为刃，以效率为行，莫让迟疑动摇你的决断。”";
+                    break;
+                case '🖤': // 玄武
+                    content.declaration = "北方水神，长久稳定。";
+                    content.talent = "您是<strong>天生的基石</strong>。深谋远虑，不轻易行动，所有决策都以<strong>‘长久、稳定、低风险’</strong>为前提。";
+                    content.advantage = "您的<strong>心海秘境</strong>深沉而稳定。在风暴中岿然不动，拥有超强的忍耐力与<strong>风险预知能力</strong>。";
+                    content.challenge = "警惕<strong>过度保守</strong>和**机会流失**。防御姿态可能让您错失进取的机会，须学会区分风险与机遇。";
+                    content.epilogue = "“深沉厚重，静水流深。唯有经得起时间的检验，方能证得永恒的价值。”";
+                    break;
+                case '💡': // 白泽
+                    content.declaration = "通晓万物，理性智慧。";
+                    content.talent = "您是<strong>天生的思想家</strong>。致力于从混沌中理清秩序，相信逻辑和事实的力量。您的价值在于提供<strong>真相</strong>。";
+                    content.advantage = "您的<strong>天命罗盘</strong>以理解世界的运作方式为驱动力。擅长分析复杂系统，提供<strong>无人能及的洞察力</strong>。";
+                    content.challenge = "警惕<strong>脱离情感</strong>和**知识傲慢**。过度的理性可能让您在人际问题上显得冷漠和不近人情。";
+                    content.epilogue = "“以洞察力穿透迷雾，以知识为基石。在真理之光下，一切伪装都将遁形。”";
+                    break;
+                case '🐦': // 精卫
+                    content.declaration = "填海之鸟，不朽誓言。";
+                    content.talent = "您是<strong>天生的实践家</strong>。一旦确立目标，您将以一种<strong>滴水穿石</strong>的姿态，持续、稳定地投入。是信念的化身。";
+                    content.advantage = "您的<strong>神能释出</strong>是细水长流、不可中断。能以时间积累下的<strong>不朽意志</strong>，完成常人眼中不可能的使命。";
+                    content.challenge = "警惕<strong>钻牛角尖</strong>和**固执己见**。对目标过度执着，可能让您缺乏变通性，难以接受客观环境的变化。";
+                    content.epilogue = "“心如磐石，誓言不朽。用时间来证明你的力量，你的执念终将改变世界。”";
+                    break;
+                case '👹': // 穷奇
+                    content.declaration = "上古凶兽，混乱反叛。";
+                    content.talent = "您是<strong>天生的革命家</strong>。擅长发现规则和体系的漏洞，并敢于发起挑战。您的力量源于<strong>混乱</strong>。";
+                    content.advantage = "您的<strong>洪荒交锋</strong>模式是反叛且颠覆的。擅长利用矛盾和冲突来暴露真相，是打破旧制度的<strong>尖锐力量</strong>。";
+                    content.challenge = "警惕<strong>为反抗而反抗</strong>和**颠倒是非**。须确保您的颠覆是为了建立更好的东西，而非纯粹为了制造混乱。";
+                    content.epilogue = "“以火炼金，以乱治世。你的叛逆是时代的鞭子，但请参与到重建之中。”";
+                    break;
+                case '🛡️': // 犰狳
+                    content.declaration = "防御之兽，保守避世。";
+                    content.talent = "您是<strong>天生的风险厌恶者</strong>。您的核心驱动力是<strong>避免风险</strong>。拥有超强的危机预警和<strong>自我保护</strong>的敏感度。";
+                    content.advantage = "您的<strong>洪荒交锋</strong>模式是谨慎周全，能最大限度地避免冲突和风险。能够长久地保持<strong>安全与稳定</strong>。";
+                    content.challenge = "警惕<strong>错失机遇</strong>和**自我限制**。过度的防御会让你停止成长和进取。真正的安全感来自于自身的勇气。";
+                    content.epilogue = "“甲胄虽坚，心门当开。勇敢地迈出那一步，因为你的防御是为了进取，而非永恒的退缩。”";
+                    break;
+                case '✖️': // 虚耗
+                    content.declaration = "消耗之灵，心力交瘁。";
+                    content.talent = "您是<strong>天生的负担感知者</strong>。对自身的能量损耗和环境的负面情绪极为敏感。能识别将导致<strong>长期疲惫和徒劳无功</strong>的任务。";
+                    content.advantage = "您的<strong>心海秘境</strong>能规避那些需要巨大精力投入但回报渺茫的陷阱。您的力量在于<strong>规避不必要的消耗</strong>。";
+                    content.challenge = "警惕<strong>自我放弃</strong>和**永久拖延**。虚耗的低落情绪会形成负面循环。须重新点燃希望，将消极情绪转化为高效的追求。";
+                    content.epilogue = "“心力为珍，勿轻虚耗。正视你的疲惫，将精力投资在真正有价值的事情上。”";
+                    break;
+                default:
+                    content.declaration = "未知命格，混沌初开。";
+                    content.talent = "无法解析，请重新测试。";
+                    content.advantage = "无优势。";
+                    content.challenge = "命格数据缺失。";
+                    content.epilogue = "命运仍在书写中。";
+            }
+
+
+            // --- 辅佐命格修正文案 ---
+            if (secondaryCode) {
+                switch (coreCode + secondaryCode) {
+                    // 青龙修正
+                    case '💚🤍': // 青龙 + 白虎 (高效创世)
+                        content.secondaryDescription = "您的创造力获得了白虎的<strong>极强执行力</strong>。这使得您的蓝图能迅速落地，在商业和管理上所向披靡。但须警惕过于严苛。";
+                        break;
+                    case '💚🖤': // 青龙 + 玄武 (稳健基石)
+                        content.secondaryDescription = "您的革新被玄武的<strong>审慎风险控制</strong>所平衡。您是稳健的改革家，每一步创新都确保了根基的稳固。";
+                        break;
+                    case '💚😈': // 青龙 + 饕餮 (功利主义)
+                        content.secondaryDescription = "您的创造和引领带有饕餮<strong>强烈的目的性与占有欲</strong>。您创造的价值，最终是为了满足巨大的利益需求。";
+                        break;
+
+                    // 鲲鹏修正
+                    case '🦅💡': // 鲲鹏 + 白泽 (格局智者)
+                        content.secondaryDescription = "您的宏大格局获得了白泽<strong>系统性的知识支撑</strong>。您的超越不再是盲目冲动，而是基于对世界规律的深刻洞察。";
+                        break;
+                    case '🦅🐦': // 鲲鹏 + 精卫 (远航意志)
+                        content.secondaryDescription = "您的超越之旅得到了精卫<strong>永不放弃的坚实毅力</strong>。您的远大抱负有了持之以恒的耐心，确保目标不会半途而废。";
+                        break;
+                    case '🦅✖️': // 鲲鹏 + 虚耗 (疲惫的雄心)
+                        content.secondaryDescription = "您的宏大抱负常被虚耗的<strong>心力交瘁和怀疑</strong>所拖累。您的雄心壮志是真，但启动和维持成本极高。";
+                        break;
+
+                    // 饕餮修正
+                    case '😈💡': // 饕餮 + 白泽 (理智贪婪)
+                        content.secondaryDescription = "您的欲望获得了白泽的<strong>理性约束</strong>。您能更精准、可持续地获取利益，而不是无节制地消耗。";
+                        break;
+                    case '😈🤍': // 饕餮 + 白虎 (高效攫取)
+                        content.secondaryDescription = "您的获取欲与白虎的<strong>极高效率</strong>相结合。您的目标明确，擅长迅速清除障碍，以最快的速度攫取资源。";
+                        break;
+
+                    // 相柳修正
+                    case '🐍🔥': // 相柳 + 凤凰 (净化涅槃)
+                        content.secondaryDescription = "您的毁灭力量获得了凤凰的<strong>重生指引</strong>。每一次清除都是为了追求更高贵的不朽和重建的希望。";
+                        break;
+
+                    // 默认修正
+                    default:
+                        // 任何其他组合，提供通用修正
+                        content.secondaryDescription = `您的核心力量被 ${MANDATES[secondaryCode].name} 的 ${MANDATES[secondaryCode].theme} 所修正，为您提供了独特的视角和平衡。`;
+                        break;
+                }
+            }
+
+            return content;
+        }
+
+
+        // --- 启动函数 ---
+        // 页面加载完成后调用渲染函数
+        document.addEventListener('DOMContentLoaded', render);
+    </script>
+</body>
+</html>
